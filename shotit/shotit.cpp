@@ -21,8 +21,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 {
 	// ≥ı ºªØ
 	global::Init(hInstance);
-	view::frame::CMainWindow::InitMainWindow();
 
+	view::frame::CMainWindow::InitMainWindow();
 	view::frame::CSnowWindow mw;
 	if (mw.CreateMainWindow(L"Shotit!")) {
 		view::MessageLoop();

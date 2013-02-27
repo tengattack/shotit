@@ -24,10 +24,10 @@
 #include "base/file/filedata.h"
 #include "base/lock.h"
 
-namespace view{
-	namespace frame{
+namespace view {
+	namespace frame {
 
-		class CSettingsWindow : public CDialog{
+		class CSettingsWindow : public CDialog {
 		public:
 			CSettingsWindow();
 			~CSettingsWindow();
@@ -58,12 +58,13 @@ namespace view{
 			}
 		};
 
-		class CSnowWindow : public CMainWindow{
+		class CSnowWindow : public CMainWindow {
 		public:
 			CSnowWindow();
 			~CSnowWindow();
 
 			void TopWindow(bool enable_);
+			void doSettings();
 
 		//protected:
 			virtual void InitWindow();

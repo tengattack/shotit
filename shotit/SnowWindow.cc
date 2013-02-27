@@ -59,6 +59,9 @@ unsigned long g_lFileindex = 0;
 bool g_alwaysontop = false;
 bool g_findwindow = false;
 
+POINT g_wndpoint = {0};
+bool g_getwndpoint = false;
+
 void ReadGlobalConfigfile()
 {
 	g_lFileindex = 0;
@@ -86,6 +89,13 @@ void ReadGlobalConfigfile()
 
 				v->GetBoolean("alwaysontop", &g_alwaysontop);
 				v->GetString("targettitle", &g_szTargetTitle);
+
+				if (v->GetInteger("window.left", (int *)&g_wndpoint.x)
+					&& v->GetInteger("window.top", (int *)&g_wndpoint.y)) {
+					g_getwndpoint = true;
+				} else {
+					g_getwndpoint = false;
+				}
 			}
 			delete v;
 		}
@@ -99,6 +109,10 @@ void WriteGlobalConfigfile()
 	v->SetString("path", g_szSavePath);
 	v->SetString("targettitle", g_szTargetTitle);
 	v->SetBoolean("alwaysontop", g_alwaysontop);
+
+	v->SetInteger("window.left", g_wndpoint.x);
+	v->SetInteger("window.top", g_wndpoint.y);
+
 	base::JSONWriter::Write(v, true, &jsontext);
 	delete v;
 
@@ -424,8 +438,8 @@ bool WriteBMPFile(HDC hDC, HBITMAP bitmap, LPCTSTR filename)
 	return bret;
 }
 
-namespace view{
-	namespace frame{
+namespace view {
+	namespace frame {
 
 		CSettingsWindow::CSettingsWindow()
 			: m_window_count(0)
@@ -533,7 +547,8 @@ namespace view{
 								if (length > 0) {
 
 									g_hShotWnd = hNewWnd;
-									if (path[length - 1] != L'\\') {
+
+									if (!HaveRightSlash(path.c_str())) {
 										path += L"\\";
 									}
 
@@ -556,8 +571,7 @@ namespace view{
 						break;
 					case ID_BUTTON_BROWSE:
 						operation::CFileSelect fs(m_hWnd, operation::kDir, NULL, L"Please select a save path");
-						if (fs.Select())
-						{
+						if (fs.Select()) {
 							text[0].SetText(fs.GetPath().c_str());
 						}
 						break;
@@ -582,7 +596,7 @@ namespace view{
 				wchar_t szfilename[25];
 
 				RECT wsize = {0};
-				::SetWindowPos(g_hShotWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
+				::SetWindowPos(g_hShotWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 				::SetFocus(g_hShotWnd);
 				::GetWindowRect(g_hShotWnd, &wsize);
 
@@ -634,8 +648,6 @@ namespace view{
 			//hide max button
 			m_skin.GetCaptionButton(1)->SetShow(false);
 			m_skin.GetCaptionButton(1)->SetEnabled(false);
-
-			//AddStaticText(
 		}
 
 		CSnowWindow::~CSnowWindow()
@@ -662,6 +674,18 @@ namespace view{
 				TopWindow(true);
 				check[0].SetCheck(true);
 			}
+
+			if (g_getwndpoint) {
+				Move(g_wndpoint.x, g_wndpoint.y);
+			}
+		}
+
+		void CSnowWindow::doSettings()
+		{
+			CSettingsWindow sw;
+			//sw.DoMedal();
+			sw.CreateDialog(m_hWnd, L"Settings", true);
+			sw.DoModal();
 		}
 
 		LRESULT CALLBACK CSnowWindow::OnWndProc(UINT message, WPARAM wParam, LPARAM lParam, bool& handled)
@@ -692,8 +716,10 @@ namespace view{
 					//‰Ø¿¿
 					case ID_BUTTON_SHOT:
 						{
+							if (!g_hShotWnd) {
+								doSettings();
+							}
 							if (g_hShotWnd) {
-
 								button[0].Enable(false);
 								::SetWindowPos(g_hShotWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
 								::SetFocus(g_hShotWnd);
@@ -704,24 +730,25 @@ namespace view{
 								} else {
 									button[0].Enable(true);
 								}
-
-							} else {
-								goto l_showsettings;
 							}
 						}
 						break;
 					case ID_BUTTON_SETTINGS:
-						{
-l_showsettings:
-							CSettingsWindow sw;
-							//sw.DoMedal();
-							sw.CreateDialog(m_hWnd, L"Settings", true);
-							sw.DoModal();
-						}
+						doSettings();
 						break;
 					}
 				}
 				return 0;
+				break;
+			case WM_CLOSE:
+				{
+					RECT rcWnd = {0};
+					if (::GetWindowRect(m_hWnd, &rcWnd)) {
+						g_wndpoint.x = rcWnd.left;
+						g_wndpoint.y = rcWnd.top;
+					}
+				}
+				WriteGlobalConfigfile();
 				break;
 			}
 
