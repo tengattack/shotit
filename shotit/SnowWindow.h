@@ -45,7 +45,7 @@ namespace view {
 		protected:
 
 			CListView listview;
-			CText text[1];
+			CText text[2];
 			CButton button[3];
 
 			virtual int GetInitialWidth() const
@@ -54,7 +54,7 @@ namespace view {
 			}
 			virtual int GetInitialHeight() const
 			{
-				return 320;
+				return 345;
 			}
 		};
 

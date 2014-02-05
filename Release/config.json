@@ -1,5 +1,10 @@
 {
-   "alwaysontop": true,
-   "path": "D:\\Users\\TengAttack\\Desktop\\",
-   "targettitle": "Shotit!"
+   "alwaysontop": false,
+   "path": "D:\\Users\\TengAttack\\Desktop\\12334\\",
+   "targettitle": "Program Manager",
+   "wait": 2000,
+   "window": {
+      "left": 1524,
+      "top": 367
+   }
 }

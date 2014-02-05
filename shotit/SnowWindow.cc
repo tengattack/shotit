@@ -44,6 +44,7 @@ enum _ID_CONTROL {
 	ID_BUTTON_ONTOP,
 	//text
 	ID_TEXT_PATH,
+  ID_TEXT_WAIT,
 	//litview
 	ID_LISTVIEW_WINDOWS,
 	//Static
@@ -56,6 +57,7 @@ std::wstring g_szTargetTitle;
 std::wstring g_szConfigfile;
 std::wstring g_szGlobalConfigfile;
 unsigned long g_lFileindex = 0;
+unsigned long g_lWait = 0;
 bool g_alwaysontop = false;
 bool g_findwindow = false;
 
@@ -90,6 +92,8 @@ void ReadGlobalConfigfile()
 				v->GetBoolean("alwaysontop", &g_alwaysontop);
 				v->GetString("targettitle", &g_szTargetTitle);
 
+        v->GetInteger("wait", (int *)&g_lWait);
+
 				if (v->GetInteger("window.left", (int *)&g_wndpoint.x)
 					&& v->GetInteger("window.top", (int *)&g_wndpoint.y)) {
 					g_getwndpoint = true;
@@ -112,6 +116,7 @@ void WriteGlobalConfigfile()
 
 	v->SetInteger("window.left", g_wndpoint.x);
 	v->SetInteger("window.top", g_wndpoint.y);
+  v->SetInteger("wait", g_lWait);
 
 	base::JSONWriter::Write(v, true, &jsontext);
 	delete v;
@@ -445,7 +450,9 @@ namespace view {
 			: m_window_count(0)
 		{
 			AddStaticText(ID_STATIC_SETTINGS, 10, 10, 485, 20, L"Select Window");
-			AddStaticText(ID_STATIC_SETTINGS, 10, 190, 485, 20, L"Save Path");
+			AddStaticText(ID_STATIC_SETTINGS, 10, 185, 485, 20, L"Save Path");
+
+      AddStaticText(ID_STATIC_SETTINGS, 10, 235, 485, 20, L"Wait (millisecond)");
 		}
 
 		CSettingsWindow::~CSettingsWindow()
@@ -505,11 +512,12 @@ namespace view {
 			listview.InsertColumn(0, L"hWnd", 100);
 			listview.InsertColumn(1, L"Name", 360);
 
-			button[0].CreateButton(m_hWnd, L"SAVE", ID_BUTTON_OK, 335, 245, 80, 30);
-			button[1].CreateButton(m_hWnd, L"CANCEL", ID_BUTTON_CANCEL, 420, 245, 80, 30);
-			button[2].CreateButton(m_hWnd, L"BROWSE", ID_BUTTON_BROWSE, 430, 210, 65, 25);
+			button[0].CreateButton(m_hWnd, L"SAVE", ID_BUTTON_OK, 335, 270, 80, 30);
+			button[1].CreateButton(m_hWnd, L"CANCEL", ID_BUTTON_CANCEL, 420, 270, 80, 30);
+			button[2].CreateButton(m_hWnd, L"BROWSE", ID_BUTTON_BROWSE, 430, 205, 65, 25);
 
-			text[0].CreateText(m_hWnd, g_szSavePath.c_str(), ID_TEXT_PATH, 10, 210, 415, 25);
+			text[0].CreateText(m_hWnd, g_szSavePath.c_str(), ID_TEXT_PATH, 10, 205, 415, 25);
+      text[1].CreateText(m_hWnd, base::UintToString16(g_lWait).c_str(), ID_TEXT_WAIT, 10, 255, 60, 25);
 
 			ListAllWindows();
 		}
@@ -529,7 +537,7 @@ namespace view {
 							int count = listview.GetItemCount();
 							int iItem = 0;
 							HWND hNewWnd = NULL;
-							std::wstring hwndtext, path;
+							std::wstring hwndtext, path, strwait;
 
 							for (int i = 0; i < count; i++) {
 								if (listview.IsItemSelected(i)) {
@@ -543,8 +551,11 @@ namespace view {
 							}
 							if (hNewWnd != NULL) {
 								text[0].GetText(path);
+                text[1].GetText(strwait);
 								int length = path.length();
-								if (length > 0) {
+                int waittime = 0;
+                base::StringToInt(strwait, &waittime);
+                if (length > 0 && waittime >= 0) {
 
 									g_hShotWnd = hNewWnd;
 
@@ -553,6 +564,7 @@ namespace view {
 									}
 
 									g_szSavePath = path;
+                  g_lWait = waittime;
 									CreateDir(path.c_str(), true);
 
 									listview.GetItemText(iItem, 1, g_szTargetTitle);
@@ -596,7 +608,13 @@ namespace view {
 				wchar_t szfilename[25];
 
 				RECT wsize = {0};
-				::SetWindowPos(g_hShotWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+        if (g_lWait > 0) {
+          Sleep(g_lWait);
+        }
+
+        ::SetForegroundWindow(g_hShotWnd);
+        ::SetWindowPos(g_hShotWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 				::SetFocus(g_hShotWnd);
 				::GetWindowRect(g_hShotWnd, &wsize);
 
